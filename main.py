@@ -1,4 +1,4 @@
-from word_game.mymod import process
+from .mymod import process
 
 
 def main():
