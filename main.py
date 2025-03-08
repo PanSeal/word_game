@@ -1,4 +1,4 @@
-from mymod import process
+from .mymod import process
 
 
 def main():
