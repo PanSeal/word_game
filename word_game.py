@@ -1,7 +1,8 @@
 import pyxel
 import random
+import platform
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 70, 130
+WINDOW_WIDTH, WINDOW_HEIGHT = 80, 130
 
 COLOR_PALETTE = {
     "黒": 0,
@@ -45,11 +46,17 @@ class App:
 
         self.now_screen = Start_Screen()
 
-        pyxel.mouse(True)
+        # PC(非タップ端末)からの実行時のみマウスカーソルを表示する
+        os_name = platform.system()
+        is_pc = os_name == "Darwin"
+        pyxel.mouse(is_pc)
+
         pyxel.run(self.update, self.draw)
 
     def update(self):
-        self.now_screen.update()
+        result = self.now_screen.update()
+        if result:
+            self.now_screen = Player_Number_Screen()
 
     def draw(self):
         self.now_screen.draw()
@@ -59,10 +66,30 @@ class Start_Screen:
     def __init__(self):
 
         self.text = "スタート"
-        self.font_size = 16
+        self.font_size = 8
         self.text_rect = (
-            WINDOW_WIDTH / 2 - int(len(self.text) / 2 * self.font_size),
+            WINDOW_WIDTH / 2 - int((len(self.text) / 2) * self.font_size),
             WINDOW_HEIGHT / 2 - int(self.font_size / 2),
+        )
+
+    def update(self):
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            return True
+
+    def draw(self):
+        pyxel.cls(COLOR_PALETTE["黒"])
+
+        draw_text((self.text_rect[0], self.text_rect[1]), self.text)
+
+
+class Player_Number_Screen:
+    def __init__(self):
+
+        self.text = "フレイニシスウセシタク"
+        self.font_size = 8
+        self.text_rect = (
+            WINDOW_WIDTH / 2 - int((len(self.text) / 2) * self.font_size),
+            10,
         )
 
     def update(self):
