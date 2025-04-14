@@ -117,8 +117,8 @@ class App:
         pyxel.load("word_game.pyxres")
 
         self.game_manager = Game_Manager
-        # self.game_manager.set_scene(Start_Up_Manager())
-        self.game_manager.set_scene(Maintenance_Manager())
+        self.game_manager.set_scene(Start_Up_Manager())
+        #self.game_manager.set_scene(Maintenance_Manager())
 
         # PC(非タップ端末)からの実行時のみマウスカーソルを表示する
         os_name = platform.system()
