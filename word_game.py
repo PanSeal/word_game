@@ -118,7 +118,7 @@ class App:
 
         self.game_manager = Game_Manager
         self.game_manager.set_scene(Start_Up_Manager())
-        #self.game_manager.set_scene(Maintenance_Manager())
+        # self.game_manager.set_scene(Maintenance_Manager())
 
         # PC(非タップ端末)からの実行時のみマウスカーソルを表示する
         os_name = platform.system()
@@ -172,7 +172,7 @@ class Maintenance_Manager(Scene):
         self.players = [
             Player(0, "たかし", "chicken"),
             Player(1, "さとし", "cat"),
-            Non_Player_Character(2, "ひろし"),
+            Player(2, "きんたま", "pig"),
         ]
 
         self.players[0].answer = "さとう"
@@ -183,9 +183,10 @@ class Maintenance_Manager(Scene):
 
         self.turn = {
             "SHOW_WEREWOLF": Show_Werewolf_Screen,
+            "VOTE_WEREWOLF": Vote_Werewolf_Screen,
         }
 
-        self.now_screen = self.turn["SHOW_WEREWOLF"](self.players)
+        self.now_screen = self.turn["VOTE_WEREWOLF"](self.players)
 
     def update(self):
         result = self.now_screen.update()
@@ -743,6 +744,9 @@ class Game_Progress_Manager(Start_Up_Manager):
 
 
 class Player:
+
+    is_player = True
+
     def __init__(self, number, name, icone):
         self.number = number
         self.name = name
@@ -763,8 +767,14 @@ class Player:
             self.number, self.name, self.score, self.vote, self.answer, self.is_werewolf
         )
 
+    def check_is_player(self):
+        return self.__class__.is_player
+
 
 class Non_Player_Character(Player):
+
+    is_player = False
+
     def __init__(self, number, name):
         super().__init__(number, name, "npc")
         self.attribute = "non_player"
@@ -1045,9 +1055,19 @@ class Answer_Input_Screen:
                 if self.now_answer_player_number >= len(self.players) - 1:
                     return True
                 elif self.now_answer_player_number == 1 and len(self.players) == 3:
-                    self.players[2].make_answer(self.quiz_number)
 
-                    return True
+                    self.now_answer_player_number += 1
+
+                    result = self.players[
+                        self.now_answer_player_number
+                    ].check_is_player()
+                    if not result:
+                        self.players[2].make_answer(self.quiz_number)
+                        return True
+                    else:
+                        # エントリーフレームを作成
+                        self.entry_flame_update()
+
                 else:
                     self.now_answer_player_number += 1
 
@@ -1152,7 +1172,7 @@ class Vote_Werewolf_Screen:
         self.text_rects_y = PNS_TEXT_RECTS_Y
 
         self.now_answer_player_number = 0
-        self.now_vote = Individual_Vote_Zinrou(
+        self.now_vote = self._Individual_Vote_Zinrou(
             self.players, self.players[self.now_answer_player_number]
         )
 
@@ -1173,7 +1193,7 @@ class Vote_Werewolf_Screen:
         elif self.players[self.now_answer_player_number].attribute == "non_player":
             return True
         else:
-            self.now_vote = Individual_Vote_Zinrou(
+            self.now_vote = self._Individual_Vote_Zinrou(
                 self.players, self.players[self.now_answer_player_number]
             )
 
@@ -1197,32 +1217,32 @@ class Vote_Werewolf_Screen:
         )
         draw_text((PNS_NEXT_BUTTON_RECT[0] + 2, PNS_NEXT_BUTTON_RECT[1] + 2), "ススム")
 
+    class _Individual_Vote_Zinrou:
+        def __init__(self, players, player):
 
-class Individual_Vote_Zinrou:
-    def __init__(self, players, player):
+            # 全てのプレイヤー
+            self.players = players
+            # 投票するプレイヤー
+            self.vote_player = player
 
-        # 全てのプレイヤー
-        self.players = players
-        # 投票するプレイヤー
-        self.vote_player = player
+            self.player_number = len(players)
 
-        self.player_number = len(players)
+            self.text_rect_x = PNS_TEXT_RECT_X
+            self.text_rects_y = PNS_TEXT_RECTS_Y[1]
 
-        self.text_rect_x = PNS_TEXT_RECT_X
-        self.text_rects_y = PNS_TEXT_RECTS_Y[1]
+            self.select_number = None
 
-        self.select_number = None
+        def update(self):
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
 
-    def update(self):
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
-
-            # 人数 円
-            n = 0
-            for i in range(self.player_number):
-                if self.players[i] == self.vote_player:
-                    pass
-                else:
+                # 人数 円
+                n = 0
+                for i in range(self.player_number):
+                    """
+                    if self.players[i] == self.vote_player:
+                        pass
+                    else:"""
                     if (
                         5 <= mouse_x <= 5 + CIRCLE_DIAMETER
                         and CIRCLE_RECTS_Y[n]
@@ -1233,43 +1253,46 @@ class Individual_Vote_Zinrou:
 
                     n += 1
 
-            # 進む
-            if (
-                PNS_NEXT_BUTTON_RECT[0]
-                <= mouse_x
-                <= PNS_NEXT_BUTTON_RECT[0] + PNS_NEXT_BUTTON_RECT[2]
-                and PNS_NEXT_BUTTON_RECT[1]
-                <= mouse_y
-                <= PNS_NEXT_BUTTON_RECT[1] + PNS_NEXT_BUTTON_RECT[3]
-            ):
-                self.vote_player.vote = self.select_number
-                return True
+                # 進む
+                if (
+                    PNS_NEXT_BUTTON_RECT[0]
+                    <= mouse_x
+                    <= PNS_NEXT_BUTTON_RECT[0] + PNS_NEXT_BUTTON_RECT[2]
+                    and PNS_NEXT_BUTTON_RECT[1]
+                    <= mouse_y
+                    <= PNS_NEXT_BUTTON_RECT[1] + PNS_NEXT_BUTTON_RECT[3]
+                ):
+                    self.vote_player.vote = self.select_number
+                    return True
 
-    def draw(self):
+        def draw(self):
 
-        # アイコン
-        pyxel.blt(
-            8,
-            self.text_rects_y,
-            0,
-            CHARACTERS_SAVE_RECTS[self.vote_player.icone][0],
-            CHARACTERS_SAVE_RECTS[self.vote_player.icone][1],
-            8,
-            8,
-            0,
-        )
-        # 名前
-        draw_text(
-            (18, self.text_rects_y),
-            f"{self.vote_player.name}の とうひょう",
-        )
+            # アイコン
+            pyxel.blt(
+                8,
+                self.text_rects_y,
+                0,
+                CHARACTERS_SAVE_RECTS[self.vote_player.icone][0],
+                CHARACTERS_SAVE_RECTS[self.vote_player.icone][1],
+                8,
+                8,
+                0,
+            )
+            # 名前
+            draw_text(
+                (18, self.text_rects_y),
+                f"{self.vote_player.name}の とうひょう",
+            )
 
-        # 投票
-        n = 0
-        for i in range(self.player_number):
-            if self.players[i] == self.vote_player:
-                pass
-            else:
+            # 投票
+            n = 0
+            for i in range(self.player_number):
+                """
+                if self.players[i] == self.vote_player:
+                    pass
+                else:
+                    pass"""
+
                 # 円
                 pyxel.circ(
                     5 + int(CIRCLE_DIAMETER / 2),
@@ -1293,38 +1316,39 @@ class Individual_Vote_Zinrou:
 
                 n += 1
 
-        # 人狼への説明コメント
-        height = (GLOBL_CLOCK // 20) % 2
-        pyxel.tri(
-            9,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 9 + height,
-            7,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 7 + height,
-            11,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 7 + height,
-            COLOR_PALETTE["白"],
-        )
-        pyxel.blt(
-            13,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 10,
-            0,
-            WOLF_SAVE_RECT[0],
-            WOLF_SAVE_RECT[1],
-            8,
-            8,
-        )
-        pyxel.text(
-            23,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 10,
-            "When you are the",
-            COLOR_PALETTE["白"],
-        )
-        pyxel.text(
-            47,
-            CIRCLE_RECTS_Y[self.player_number - 1] - 4,
-            "only werewolf",
-            COLOR_PALETTE["白"],
-        )
+            """
+            # 人狼への説明コメント
+            height = (GLOBL_CLOCK // 20) % 2
+            pyxel.tri(
+                9,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 9 + height,
+                7,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 7 + height,
+                11,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 7 + height,
+                COLOR_PALETTE["白"],
+            )
+            pyxel.blt(
+                13,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 10,
+                0,
+                WOLF_SAVE_RECT[0],
+                WOLF_SAVE_RECT[1],
+                8,
+                8,
+            )
+            pyxel.text(
+                23,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 10,
+                "When you are the",
+                COLOR_PALETTE["白"],
+            )
+            pyxel.text(
+                47,
+                CIRCLE_RECTS_Y[self.player_number - 1] - 4,
+                "only werewolf",
+                COLOR_PALETTE["白"],
+            )"""
 
 
 class Show_Werewolf_Screen:
